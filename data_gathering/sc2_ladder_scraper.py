@@ -99,8 +99,8 @@ def scrape(regions, seasons, id_anchor):
 
 # %%
 regions = ['us', 'eu', 'kr', 'cn']
-total_seasons = np.arange(28, 30) # seasons 28 through 58
-season_splits = np.array_split(total_seasons, 2) # split seasons into 2 parts
+total_seasons = np.arange(28, 59) # seasons 28 through 58
+season_splits = np.array_split(total_seasons, 4) # split seasons into 2 parts
 id_anchors = np.arange(len(season_splits))
 
 # parallelize web scraping
