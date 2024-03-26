@@ -91,8 +91,6 @@ def scrape(regions, seasons, id_anchor):
                 if attempts == 5:
                     print(f"After 5 attempts, no data could be retrieved for season {season}, region {region}, page {page_idx + 1}. Moving on...")
                 page_idx += 1
-                if page_idx == 3:
-                    break
 
     driver.quit()
     return data_list
