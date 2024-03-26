@@ -1,5 +1,5 @@
 # %%
-!pip install --no-cache-dir pandas numpy beautifulsoup4 selenium webdriver-manager lxml
+# !pip install --no-cache-dir pandas numpy beautifulsoup4 selenium webdriver-manager lxml
 
 # %%
 import pandas as pd
@@ -9,6 +9,7 @@ import lxml
 import lxml.etree
 import time
 import os
+from tqdm import tqdm 
 
 from bs4 import BeautifulSoup
 
@@ -27,6 +28,7 @@ def scrape(seasons, id_anchor):
     # setup selenium web driver
     service = Service(ChromeDriverManager().install())
     chrome_options = Options()
+    chrome_options.add_argument("--incognito")
     chrome_options.add_argument("--headless")
     driver = webdriver.Chrome(service=service, options=chrome_options)
 
@@ -97,7 +99,7 @@ def scrape(seasons, id_anchor):
 
 # %%
 total_seasons = np.arange(28, 59) # seasons 28 through 58
-season_splits = np.array_split(total_seasons, 2) # split seasons into 2 parts
+season_splits = np.array_split(total_seasons, 4) # split seasons into 2 parts
 id_anchors = np.arange(len(season_splits))
 
 # parallelize web scraping
@@ -105,7 +107,7 @@ with concurrent.futures.ThreadPoolExecutor() as executor:
     futures = [executor.submit(scrape, seasons, id_anchor) for seasons, id_anchor in zip(season_splits, id_anchors)]
     
     all_data = []
-    for future in concurrent.futures.as_completed(futures):
+    for future in tqdm (concurrent.futures.as_completed(futures), total=len(futures), desc="Scraping Progress"):
         all_data.extend(future.result())
 
 # %%
