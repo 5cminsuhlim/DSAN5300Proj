@@ -39,7 +39,7 @@ def scrape(regions, seasons, id_anchor):
 
             while True:
                 attempts = 0 # attempts counter
-                print(f"Region: {region}, Season: {season}, Fetching page: {page_idx + 1}")
+                print(f"Region: {region.upper()}, Season: {season}, Fetching page: {page_idx + 1}")
                 while attempts < 5:
                     url = f"https://sc2pulse.nephest.com/sc2/?season={season}&queue=LOTV_1V1&team-type=ARRANGED&{region}=true&bro=true&sil=true&gol=true&pla=true&dia=true&mas=true&gra=true&page={page_idx}&type=ladder&ratingAnchor={max_rating}&idAnchor={id_anchor}&count=1#ladder-top"
                     
@@ -56,7 +56,7 @@ def scrape(regions, seasons, id_anchor):
                             for row in rows:
                                 player_data = {}
                                 player_data['Season'] = season
-                                player_data['Region'] = region
+                                player_data['Region'] = region.upper()
 
                                 mmr = int(row.find('td', class_='rating').text.strip())
                                 player_data['Rating'] = mmr
