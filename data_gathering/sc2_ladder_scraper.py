@@ -23,8 +23,6 @@ import concurrent.futures
 
 # %%
 def scrape(regions, seasons, id_anchor):
-    data_list = []
-
     # setup selenium web driver
     service = Service(ChromeDriverManager().install())
     chrome_options = Options()
@@ -34,6 +32,7 @@ def scrape(regions, seasons, id_anchor):
     
     for region in regions:
         for season in seasons:
+            data_list = [] # data for current region + season
             max_rating = 99999 # arbitrarily high max rating for new season
 
             while True:
@@ -43,7 +42,7 @@ def scrape(regions, seasons, id_anchor):
                     url = f"https://sc2pulse.nephest.com/sc2/?season={season}&queue=LOTV_1V1&team-type=ARRANGED&{region}=true&bro=true&sil=true&gol=true&pla=true&dia=true&mas=true&gra=true&page=0&type=ladder&ratingAnchor={max_rating}&idAnchor={id_anchor}&count=1#ladder-top"
                     
                     driver.get(url)
-                    delay = np.random.uniform(1,3) # adjust based on website tolerance
+                    delay = 2 #np.random.uniform(1,3) # adjust based on website tolerance
                     time.sleep(delay)
 
                     soup = BeautifulSoup(driver.page_source, 'lxml')
@@ -96,65 +95,44 @@ def scrape(regions, seasons, id_anchor):
                 if max_rating <= 0:
                     print(f"Completed scraping for season {season}, region {region}. Exiting...")
                     break # break out of inner while loop if all players for season and region have been parsed
+                
+            print(f"Completed scraping for season {season}, region {region}. Saving data...")
+            
+            # Organize data by rank
+            organized_data = {}
+            for row in data_list:
+                rank = row['Rank']
+                if rank not in organized_data:
+                    organized_data[rank] = []
+                organized_data[rank].append(row)
 
+            # Save data to CSV
+            directory_path = f"data/season_{season}/{region.upper()}"
+            if os.path.exists(directory_path):
+                shutil.rmtree(directory_path)
+            os.makedirs(directory_path)
+            for rank, rows in organized_data.items():
+                df = pd.DataFrame(rows)
+                filename = f"{directory_path}/{rank}.csv"
+                df.to_csv(filename, index=False)
+
+            print(f"Data for season {season}, region {region} saved.")
     driver.quit()
-    return data_list
 
 # %%
 regions = ['us', 'eu', 'kr', 'cn']
 total_seasons = np.arange(28, 59) # seasons 28 through 58
 
-num_workers = 2 # change based on threads
+num_workers = 3 # change based on threads
 season_splits = np.array_split(total_seasons, num_workers)
 id_anchors = np.arange(len(season_splits))
 
 # parallelize web scraping
 with concurrent.futures.ThreadPoolExecutor() as executor:
     futures = [executor.submit(scrape, regions, seasons, id_anchor) for seasons, id_anchor in zip(season_splits, id_anchors)]
-    
-    all_data = []
     for future in tqdm(concurrent.futures.as_completed(futures), total=len(futures), desc="Scraping Progress"):
-        all_data.extend(future.result())
-
-# %%
-# organize data by season, region, rank
-organized_data = {}
-
-for row in all_data:
-    season = row['Season']
-    region = row['Region']
-    rank = row['Rank']
-    
-    if season not in organized_data:
-        organized_data[season] = {}
-    
-    if region not in organized_data[season]:
-        organized_data[season][region] = {}
-        
-    if rank not in organized_data[season][region]:
-        organized_data[season][region][rank] = []
-    
-    organized_data[season][region][rank].append(row)
-
-for season, regions in organized_data.items():
-    for region, ranks in regions.items():
-        # create dirs for each season + region
-        directory_path = f"data/ladder/season_{season}/{region}"
-        
-        # if dir exists, delete
-        if os.path.exists(directory_path):
-            shutil.rmtree(directory_path)
-        
-        # create dirs
-        os.makedirs(directory_path)
-        
-        for rank, rows in ranks.items():
-            # convert every row (each list of dictionaries) into df
-            df = pd.DataFrame(rows)
-            # create csv based on season, region, rank
-            filename = f"{directory_path}/{rank}.csv"
-            df.to_csv(filename, index=False)
-            
+        future.result()
+ 
 '''
 31 seasons
 4 regions
