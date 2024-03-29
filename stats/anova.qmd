@@ -6,7 +6,7 @@ format:
     toc: true
 ---
 
-# DSAN5300 ANOVA Testing on Rank and Race Class for Player APM/SPM
+# ANOVA Testing on Rank and Race Class for Player APM/SPM
 
 ## ANOVA Testing:
 Actions per minute or APM is a common statistic that is used to describe a player's capabilities in StarCraft 2 (SC2). The ability to do many tasks and moves to make the most of each second makes APM a reliable metric to use in determining a player's skill and knowledge. 
@@ -26,6 +26,7 @@ We want to examine the distribution of the race classes, their win percentage ov
 library(tidyverse)
 library(rstatix)
 library(ggpubr)
+library(ggplot2)
 
 ```
 
@@ -38,6 +39,13 @@ match_hist = read.csv('./data/sc2-matches-history.csv')
 #Main dataset of players across all ranks.
 #LeagueIndex: Bronze, Silver, Gold, Platinum, Diamond, Master, GrandMaster, and Professional leagues coded 1-8 (Ordinal)
 main = read.csv('./data/SkillCraft1_Dataset.csv')
+
+#IEM ANOVA dataset
+iem_games = read.csv('./data/iem/IEM_games.csv')
+iem_players = read.csv('./data/iem/IEM_players.csv')
+iem_players_info = read.csv('./data/iem/IEM_players_info.csv')
+iem_scores = read.csv('./data/iem/IEM_scores.csv')
+
 ```
 
 ## EDA On Match History Dataset
@@ -152,31 +160,117 @@ Again, it seems that the win rates for each combination of race class vs race cl
 
 
 
-
 # SC2 IEM Katowice 2016-2023 Tournaments Dataset
 
 After seeing an equal distribution of win rates for each race, we wanted to investigate how APM and SPM might contribute to securing a win for each race class.
 
-To do this, we will examine how different or similar APM and SPM is per class vs class. This will help us get an idea of how much more APM and SPM is required for each class. Since each race class has a similar win rate in professional play, we can therefore look into how different each play style is in securing the win.
+To do this, we will examine how different or similar APM and SPM is per class vs class. This will help us get an idea of how much more APM and SPM is required for each class. Since each race class has a similar win rate in professional play, we can therefore look into how different each play style is for each race in securing the win.
 
-First, I will look at only the players that are in the Professional Leagues or `LeagueIndex == 8` to help compare what we saw in the match history dataset of professional players where the win rates are essentially the same across all race classes.
+This can be done with the SC2 IEM Katowice dataset where it contains the match and player info of professionals that the first dataset lacked like APM and SPM. We will use ANOVA testing to compare APM/SPM ~ Race class and then a Post-hoc test like Tukey HSD to compare each race variable with each other.
+
+## EDA on IEM Dataset
+
+### IEM EDA 1
+First have a look at the dataset in regards to APM/SPM for each race.
+```{r iem_eda1}
+ggplot(iem_players) +
+  aes(x = Race, y = APM, fill = Race) +
+  geom_boxplot() +
+  theme(legend.position = "none") + labs(title='APM per Race Class')
+```
+### IEM EDA 2
+
+```{r iem_eda2}
+ggplot(iem_players) +
+  aes(x = Race, y = SPM, fill = Race) +
+  geom_boxplot() +
+  theme(legend.position = "none") + labs(title='SPM per Race Class')
+```
+
+In both EDA plots of the iem_players dataset, we can see that players that play the Zerg race class typically make more actions and screen changes. Therefore, the play style needed to play Zerg requires a much higher APM and SPM to play effectively at a professional level. This might mean that there is a higher skill ceiling for this race class to compete against other race classes at a professional level.
+
+Additionally, Protoss has the second highest SPM and lowest APM across all race classes. This is interesting to see that they have the lowest APM needed but the second highest SPM. This means they don't need to do as many actions but need to change screens more often than Terran. 
+
+## ANOVA and Post-Hoc Testing
+
+### ANOVA Testing on Matchup for APM/SPM
+
+Now do ANOVA testing on APM and SPM with all race class variables.
+
+__Null hypothesis:__ The SPM and APM of all race classes are not statistically significant. 
+__Alternate hypothesis:__ The SPM and APM of 2 or more race class(es) are statistically different from each other.
 
 ```{r anova1}
-#subset main dataset to get all the pros
-pro_main <- main[main$LeagueIndex == 8, ]
+#ANOVA testing on this to see how avg APM and SPM differ for different races
+#make race col a factor instead of character col:
+iem_players$Race <- as.factor(iem_players$Race)
 
-#ANOVA testing on this to see how race fairs 
+#APM per Race anova
+apm_anova <- aov(APM ~ Race, data = iem_players)
+#SPM per Race anova
+spm_anova <- aov(SPM ~ Race, data = iem_players)
 
 ```
 
+Following the steps from here:
+https://statsandr.com/blog/anova-in-r/
+
+Plotting tools to check for normality of the ANOVA testings.
+
+```{r anova1_norm_plot}
+
+hist(apm_anova$residuals, main='APM ANOVA Testing; APM ~ Race')
+hist(spm_anova$residuals, main='SPM ANOVA Testing; SPM ~ Race')
+
+```
+
+With our sample size from the IEM dataset, normality shouldn't be an issue but checking it wouldn't hurt. Since both histograms for SPM and APM seem normally distributed, we can continue on and check how different APMs and SPMs are with each race variable.
+
+```{r anova1}
+#using report to make assessment on ANOVA tests
+library("report")
+
+print('----------------------')
+print('APM ANOVA Test Report:')
+report(apm_anova)
+print('----------------------')
+print('SPM ANOVA Test Report:')
+report(spm_anova)
+```
+
+Both had 1 or more race class label that is significantly different from the rest in regards to APM and SPM.
+
+Now, Post-Hoc test to compare races in pairs. This way we can see which class pair matchup is significantly different from each other in terms of APM and SPM.
 
 
+### Post-Hoc Tukey Testing on Race Classes for APM/SPM 
 
+To do an exhaustive search of which combination of race classes are statistically different from each other through multiple t-tests of each combination aka as the Tukey test.
 
+```{r tukey}
+library(multcomp)
+#Tukey for apm and spm anova tests
+tuk_apm <- glht(apm_anova, linfct = mcp(Race = "Tukey"))
+tuk_spm <- glht(spm_anova, linfct = mcp(Race = "Tukey"))
 
+print('------------------------------------------------------------')
+print('APM Tukey Post-Hoc Test Summary:')
+summary(tuk_apm)
+print('------------------------------------------------------------')
+print('SPM Tukey Post-Hoc Test Summary:')
+summary(tuk_spm)
+```
+We see that the differences in the EDA section for APM and SPM are statistically significant.
 
+## Conclusions
 
+Based on this, it seems that all combination of race classes for both SPM and APM are significantly different from each other in this IEM dataset.
 
+We can also go back to our EDA to see rankings of each race for APM, from highest to lowest APM it goes Zerg, Terran, then Protoss. 
+
+For SPM, from highest to lowest SPM it goes Zerg, Protoss, then Terran.
+
+At the start, we got an idea that at the professional level, chosen races do not make a significant difference in terms of win rate. Each race class had a similar win rate of 53-56%. Keeping the skill level consistent, we found that APM and SPM did, however, statistically differed per race class. We can now move on to the main dataset where we will examine how APM shifts based on rank keeping in mind the necessary APM and SPM for each race class to win at the professional level.
 
 
 
