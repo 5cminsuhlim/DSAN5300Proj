@@ -15,3 +15,62 @@ library(ggpubr)
 
 ```
 
+```{r data}
+#Main dataset of players across all ranks.
+#LeagueIndex: Bronze, Silver, Gold, Platinum, Diamond, Master, GrandMaster, and Professional leagues coded 1-8 (Ordinal)
+main = read.csv('./data/SkillCraft1_Dataset.csv')
+```
+
+# From ANOVA Motivations
+
+For this dataset, SPM is not included as a variable that we can examine. Instead, all the different ranks in some volume are available to compare. So in this dataset, we will look at how APM compares at each combination of rank vs rank. So we will examine if there is a statistical difference of APM at different ranks. This will give us an idea of how relevant APM is in determining one's rank.
+
+# EDA of Avg APM Across Each Rank
+
+First take a look at the dataset and calculate the average APM across each rank.
+
+```{r eda1}
+#groupby rank, summarize avg APM, then plot
+eda_apm <- main %>% group_by(LeagueIndex) %>% summarize(avgAPM = mean(APM))
+
+barplot(eda_apm$avgAPM, names.arg = eda_apm$LeagueIndex, main='Avg APM By Rank/LeagueIndex 1-8', xlab='Rank 1-8 (1=Bronze to 8=Professional)', ylab='Avg APM')
+
+```
+
+
+
+# Pair-wise T-test on Rank ~ APM/SPM
+
+```{r t-test1}
+#APM pw t-test
+pw_apm <- main %>% pairwise_t_test(APM ~ LeagueIndex, pool.sd = FALSE)
+
+
+```
+
+There are 28 different rank combinations. We can see which groups are significantly different from each other in an exhaustive search of each combination of ranks.
+
+To do this I am following what this article is doing:
+https://www.datanovia.com/en/lessons/pairwise-t-test/
+
+
+```{r t-test_plot}
+#APM pw t-test boxplot
+apm_plot <- pw_apm %>% 
+  add_xy_position(x='LeagueIndex', step.increase = 1)
+
+ggboxplot(main, x='LeagueIndex', y='APM') + 
+  stat_pvalue_manual(apm_plot, hide.ns = TRUE)
+
+
+```
+
+From this boxplot and from the previously done EDA it illustrates that at each combination of rank, APM is statistically significantly from each other. Thus, we can confirm that APM is a great distinguisher of players in StarCraft 2. We can further branch this out to potentially predicting unseen player data using APM as a major predictor metric. 
+
+
+
+
+
+
+
+
