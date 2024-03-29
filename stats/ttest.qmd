@@ -6,7 +6,7 @@ format:
     toc: true
 ---
 
-# DSAN5300 Pair-wise T-test on Rank and Race Class on APM/SPM
+# Pair-wise T-test on Rank per Race Class on APM/SPM
 
 ```{r init}
 library(tidyverse)
