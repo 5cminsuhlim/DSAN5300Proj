@@ -1,0 +1,279 @@
+
+---
+format:
+  html:
+    embed-resources: true
+    toc: true
+---
+
+# ANOVA Testing on Rank and Race Class for Player APM/SPM
+
+## ANOVA Testing:
+Actions per minute or APM is a common statistic that is used to describe a player's capabilities in StarCraft 2 (SC2). The ability to do many tasks and moves to make the most of each second makes APM a reliable metric to use in determining a player's skill and knowledge. 
+
+Additionally, SPM is another dimension that can be used to track how quickly one moves their screen around the map. A higher SPM means more map information for the player and quicker base expansion.
+
+There are 3 race classes that the player could play as (Terran, Zerg, or Protoss). Our motivation for this statistical venture is to examine whether there are some classes that require less or more APM/SPM to succeed in securing a win. Also, whether APM/SPM is a bigger deal for some races or not as the races have different play styles.
+
+## Motivation:
+A long dataset containing the match history of SC2 pro players with their win or loss outcome, their race class played, the score, their opponent's name and other tournament details: https://www.kaggle.com/datasets/alimbekovkz/starcraft-ii-matches-history?resource=download
+
+We want to examine the distribution of the race classes, their win percentage overall, and their win percentage against each race class before moving to ANOVA and examining APM/SPM.
+
+## Packages
+
+```{r init}
+library(tidyverse)
+library(rstatix)
+library(ggpubr)
+library(ggplot2)
+
+```
+
+## Importing Data
+
+```{r data}
+#ANOVA Motivation dataset:
+match_hist = read.csv('./data/sc2-matches-history.csv')
+
+#Main dataset of players across all ranks.
+#LeagueIndex: Bronze, Silver, Gold, Platinum, Diamond, Master, GrandMaster, and Professional leagues coded 1-8 (Ordinal)
+main = read.csv('./data/SkillCraft1_Dataset.csv')
+
+#IEM ANOVA dataset
+iem_games = read.csv('./data/iem/IEM_games.csv')
+iem_players = read.csv('./data/iem/IEM_players.csv')
+iem_players_info = read.csv('./data/iem/IEM_players_info.csv')
+iem_scores = read.csv('./data/iem/IEM_scores.csv')
+
+```
+
+## EDA On Match History Dataset
+
+### EDA 1
+
+```{r eda1}
+
+#distribution of race classes played in percentage
+race1 <- table(match_hist$player_1_race)
+barplot(race1, main='Race Class Distribution of Recorded Pro Players (SC2)')
+
+race2 <- table(match_hist$player_2_race)
+barplot(race2, main='Race Class Distribution of Opponents of Recorded Pro Players (SC2)', col='lightblue')
+
+```
+
+Seems to show a very similar trend of equal distribution across all race classes for both recorded pro players and their opponents. That being said, their opponents might overlap with each other as its just mostly the same pool of pro players across the years going against each other. In any case, there seems to be a greater preference for Zerg (Z), then Protoss (P), then Terran (T). 
+
+We are not sure what R is as the dataset does not mention this in its documentation but it seems to be some error/logistical anomaly data label that is unrelated to the race distribution. Thus, we will just ignore that label given how rare it seems to appear in the dataset.
+
+Whats important is seeing that the race distributions are mostly equal across all pros with a decent preference for Zerg.
+
+### Some Cleaning after First EDA
+
+After the first EDA, we noticed a fourth anomaly race R which we have no info about in the dataset documentation. Additionally, the game specifically has 3 races to choose from so this 4th race might be some tournament logistical error or an error on the webscraping pipeline. In any case, we need to remove those classes.
+
+```{r eda1_cleanup}
+#noticed that R is an anomaly race class that should be removed
+
+#subset the first race col for player 1 to include everything but R class label
+match_hist <- match_hist[match_hist$player_1_race != 'R',]
+#subset again for the second race col for player 2
+match_hist <- match_hist[match_hist$player_2_race != 'R',]
+
+```
+
+
+### EDA 2
+
+```{r eda2}
+# get the win percentage for each race class only for PLAYER 1
+
+#make function that will get win percentage for each class
+win_perc <- function(race_class, result_col, race_col){
+  #subset the result Win or Loss col by race index
+  subset_result <- result_col[race_col == race_class]
+
+  #count the number of  wins and length of subset
+  win_sum <- sum(subset_result == '[winner]')
+  len_subset <- length(subset_result)
+
+  #return percentage
+  return((win_sum/len_subset)*100)
+}
+
+#get all classes for match history dataset
+match_hist_races <- unique(match_hist$player_1_race)
+
+#sapply to all race classes with another function that takes in race
+#and calculates the wr for that race
+race_wr <- sapply(match_hist_races, function(race){
+  win_perc(race, match_hist$player_1_match_status, match_hist$player_1_race)
+})
+
+print(race_wr)
+
+barplot(race_wr, main='Win Percentage for Each Race Class', xlab='Races', ylab='Win Percentage (%)', col = 'lightblue', ylim = c(0,100))
+
+```
+
+With a similar distribution, it seems each race class has similar win rates of ~53-56%. It does not seem like chosen race has any impact on the final win rate. Though each race having above 50% win rate by 3% or more is actually significant.
+
+### EDA 3
+
+Now we wanted to go into more detail on the last EDA by examining how each class performs against each other (i.e. PvP, PvZ, PvT, ZvZ, etc.) 
+
+```{r eda3}
+#expand.grid for all unique classes from the two race class columns
+p1_race <- unique(match_hist$player_1_race)
+p2_race <- unique(match_hist$player_2_race)
+race_combi <- expand.grid(race1 = p1_race, race2 = p2_race)
+print(race_combi)
+
+#make function that will take in the row of the expand grid
+#and returns wr percentage for each race against each combination
+#of other races including itself.
+combo_percs <- sapply(1:nrow(race_combi), function(i){
+  #get the races for the row
+  race1 <- race_combi[i,1]
+  race2 <- race_combi[i,2]
+  
+  #subset dataset to only get the rows for race 1 and 2 that we want
+  subset_result12 <- match_hist$player_1_match_status[match_hist$player_1_race == race1 & match_hist$player_2_race == race2]
+  
+  #calc wr again using same formula as before
+  win_sum <- sum(subset_result12 == '[winner]')
+  len_subset <- length(subset_result12)
+  
+  return((win_sum/len_subset)*100)
+})
+
+perc_combos <- data.frame(Class_Combo = apply(race_combi, 1, paste, collapse = "-"),
+                        Win_Percentage = combo_percs)
+print(perc_combos)
+
+barplot(names.arg = perc_combos$Class_Combo, perc_combos$Win_Percentage, main = 'Win Rate of Each Race vs Race Combination', col='lightblue', ylab = 'Win Rate (%)', xlab='Each Race vs Race Combination', ylim = c(0,100))
+
+```
+
+Again, it seems that the win rates for each combination of race class vs race class are equally distributed. Though what is interesting is that the win rates from the second EDA with this EDA are above 50% with most of them being around ~53-55%. And again, above a 50% win rate of about 3% or more is significant.
+
+
+
+# SC2 IEM Katowice 2016-2023 Tournaments Dataset
+
+After seeing an equal distribution of win rates for each race, we wanted to investigate how APM and SPM might contribute to securing a win for each race class.
+
+To do this, we will examine how different or similar APM and SPM is per class vs class. This will help us get an idea of how much more APM and SPM is required for each class. Since each race class has a similar win rate in professional play, we can therefore look into how different each play style is for each race in securing the win.
+
+This can be done with the SC2 IEM Katowice dataset where it contains the match and player info of professionals that the first dataset lacked like APM and SPM. We will use ANOVA testing to compare APM/SPM ~ Race class and then a Post-hoc test like Tukey HSD to compare each race variable with each other.
+
+## EDA on IEM Dataset
+
+### IEM EDA 1
+First have a look at the dataset in regards to APM/SPM for each race.
+```{r iem_eda1}
+ggplot(iem_players) +
+  aes(x = Race, y = APM, fill = Race) +
+  geom_boxplot() +
+  theme(legend.position = "none") + labs(title='APM per Race Class')
+```
+### IEM EDA 2
+
+```{r iem_eda2}
+ggplot(iem_players) +
+  aes(x = Race, y = SPM, fill = Race) +
+  geom_boxplot() +
+  theme(legend.position = "none") + labs(title='SPM per Race Class')
+```
+
+In both EDA plots of the iem_players dataset, we can see that players that play the Zerg race class typically make more actions and screen changes. Therefore, the play style needed to play Zerg requires a much higher APM and SPM to play effectively at a professional level. This might mean that there is a higher skill ceiling for this race class to compete against other race classes at a professional level.
+
+Additionally, Protoss has the second highest SPM and lowest APM across all race classes. This is interesting to see that they have the lowest APM needed but the second highest SPM. This means they don't need to do as many actions but need to change screens more often than Terran. 
+
+## ANOVA and Post-Hoc Testing
+
+### ANOVA Testing on Matchup for APM/SPM
+
+Now do ANOVA testing on APM and SPM with all race class variables.
+
+__Null hypothesis:__ The SPM and APM of all race classes are not statistically significant. 
+__Alternate hypothesis:__ The SPM and APM of 2 or more race class(es) are statistically different from each other.
+
+```{r anova1}
+#ANOVA testing on this to see how avg APM and SPM differ for different races
+#make race col a factor instead of character col:
+iem_players$Race <- as.factor(iem_players$Race)
+
+#APM per Race anova
+apm_anova <- aov(APM ~ Race, data = iem_players)
+#SPM per Race anova
+spm_anova <- aov(SPM ~ Race, data = iem_players)
+
+```
+
+Following the steps from here:
+https://statsandr.com/blog/anova-in-r/
+
+Plotting tools to check for normality of the ANOVA testings.
+
+```{r anova1_norm_plot}
+
+hist(apm_anova$residuals, main='APM ANOVA Testing; APM ~ Race')
+hist(spm_anova$residuals, main='SPM ANOVA Testing; SPM ~ Race')
+
+```
+
+With our sample size from the IEM dataset, normality shouldn't be an issue but checking it wouldn't hurt. Since both histograms for SPM and APM seem normally distributed, we can continue on and check how different APMs and SPMs are with each race variable.
+
+```{r anova1}
+#using report to make assessment on ANOVA tests
+library("report")
+
+print('----------------------')
+print('APM ANOVA Test Report:')
+report(apm_anova)
+print('----------------------')
+print('SPM ANOVA Test Report:')
+report(spm_anova)
+```
+
+Both had 1 or more race class label that is significantly different from the rest in regards to APM and SPM.
+
+Now, Post-Hoc test to compare races in pairs. This way we can see which class pair matchup is significantly different from each other in terms of APM and SPM.
+
+
+### Post-Hoc Tukey Testing on Race Classes for APM/SPM 
+
+To do an exhaustive search of which combination of race classes are statistically different from each other through multiple t-tests of each combination aka as the Tukey test.
+
+```{r tukey}
+library(multcomp)
+#Tukey for apm and spm anova tests
+tuk_apm <- glht(apm_anova, linfct = mcp(Race = "Tukey"))
+tuk_spm <- glht(spm_anova, linfct = mcp(Race = "Tukey"))
+
+print('------------------------------------------------------------')
+print('APM Tukey Post-Hoc Test Summary:')
+summary(tuk_apm)
+print('------------------------------------------------------------')
+print('SPM Tukey Post-Hoc Test Summary:')
+summary(tuk_spm)
+```
+We see that the differences in the EDA section for APM and SPM are statistically significant.
+
+## Conclusions
+
+Based on this, it seems that all combination of race classes for both SPM and APM are significantly different from each other in this IEM dataset.
+
+We can also go back to our EDA to see rankings of each race for APM, from highest to lowest APM it goes Zerg, Terran, then Protoss. 
+
+For SPM, from highest to lowest SPM it goes Zerg, Protoss, then Terran.
+
+At the start, we got an idea that at the professional level, chosen races do not make a significant difference in terms of win rate. Each race class had a similar win rate of 53-56%. Keeping the skill level consistent, we found that APM and SPM did, however, statistically differed per race class. We can now move on to the main dataset where we will examine how APM shifts based on rank keeping in mind the necessary APM and SPM for each race class to win at the professional level.
+
+
+
+
+
+
