@@ -234,14 +234,14 @@ Same as previous features
 ```{r}
 ###process the data 
 
-df3<-training%>%
+training1<-training%>%
   select(-GapBetweenPACs,-LeagueIndex,-all_util,-inq_fi,-emp_length,-acc_now_delinq,-open_il_6m,-annual_inc,-num_il_tl)
 
 
 ```
 
 ```{r}
-best_fit<-lm(APM~.,data=training)
+best_fit<-lm(APM~.,data=training1)
 pred<-predict(best_fit,newdata=testing)
 
 real<-testing$APM
