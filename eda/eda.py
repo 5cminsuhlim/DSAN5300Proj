@@ -4,6 +4,7 @@ import pandas as pd
 data_directory = '../data/data_web' 
 all_data = []
 
+#data processing and cleaning
 #iterate over each season
 for season_dir in os.listdir(data_directory):
     season_path = os.path.join(data_directory, season_dir)
