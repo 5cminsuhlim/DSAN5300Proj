@@ -9,11 +9,7 @@ editor: visual
 
 ## Linear Regression Model
 
-goal:
-
-1.  Are we able to predict a player’s APM?
-
-2.  What are the most important features in predicting a player’s APM?
+In this section, our focus narrows to the intricacies of the linear regression model, with the dual objectives of discerning whether a player's Actions Per Minute (APM) can be accurately predicted and identifying the pivotal features that most significantly influence the prediction of a player’s APM.
 
 ### Data Preprocessing
 
@@ -52,15 +48,7 @@ df2_cor<-cor(training)
 corrplot(df2_cor,method="circle",order="hclust",tl.col="black")
 ```
 
-high positive correlation:
-
-1.  ActionLatency and GapBetweenPACs
-
-high negative correlations:
-
-1.  NumberOfPACs and ActionLatency
-
-2.  LeagueIndex and ActionLatency
+The correlation plot revealed striking relationships: 'ActionLatency' and 'GapBetweenPACs' exhibited a notable positive correlation, while 'NumberOfPACs' and 'LeagueIndex' inversely correlated with 'ActionLatency.' These early insights suggested key areas of focus for our predictive modeling.
 
 ### Initial Modeling
 
@@ -88,6 +76,8 @@ Insignificant features (p-value greater than 0.05):
 7.  TotalMapExplored
 
 8.  ComplexUnitsMade
+
+For the initial model, we included all available predictors. However, upon scrutinizing the model's summary, we identified several predictors like 'GameID', 'HoursPerWeek', and 'TotalHours' that lacked statistical significance, hence presenting an opportunity to refine our model.
 
 #### Predictive Capacity
 
@@ -124,10 +114,6 @@ cp_min<-which.min(cp)
 bic_min<-which.min(bic)
 r2_min<-which.max(r2)
 
-
-print("cp: ",cp_min)
-print("bic: ",bic_min)
-print("r_squared: ",r2_min)
 coef(regs,id=cp_min)
 ```
 
@@ -227,7 +213,7 @@ coef(regs,id=bic_min)
 coef(regs,id=r2_min)
 ```
 
-Same as previous features
+Delving deeper, we employed best subset, forward stepwise, and backward stepwise selection methods. These techniques helped us to distill the essence of our predictors, consistently highlighting features such as 'Age', 'SelectByHotkeys', and 'MinimapRightClicks' as significant influencers of APM.
 
 ### Optimal Linear Regression Model
 
@@ -235,22 +221,52 @@ Same as previous features
 ###process the data 
 
 training1<-training%>%
-  select(-GapBetweenPACs,-LeagueIndex,-all_util,-inq_fi,-emp_length,-acc_now_delinq,-open_il_6m,-annual_inc,-num_il_tl)
-
+  select(-GapBetweenPACs,-LeagueIndex,-GameID,-HoursPerWeek,-TotalHours,-AssignToHotkeys,-UniqueHotkeys,-GapBetweenPACs,-TotalMapExplored,-ComplexUnitsMade)
 
 ```
 
 ```{r}
 best_fit<-lm(APM~.,data=training1)
 pred<-predict(best_fit,newdata=testing)
-
 real<-testing$APM
-rmse<-sqrt(mean((pred-real)^2))
 
-rmse
+errors <- pred-real
+MAE <- mean(abs(errors))
+MSE <- mean(errors^2)
+RMSE <- sqrt(MSE)
+
+cat("MAE:", MAE, "\nMSE:", MSE, "\nRMSE:", RMSE)
+```
+
+```{r}
+summary(best_fit)
 ```
 
 ## Conclusion
+
+```{r}
+summary(df$APM)
+```
+
+Considering the scale of APM, the predictive metric RMSE at around 9.37 means that linear regression model may not be the optimal choice for predicting player's APM.
+
+The most important features in predicting a player’s APM include:
+
+1.  Age
+
+2.  SelectByHotkeys
+
+3.  MinimapRightClicks
+
+4.  NumberOfPACs
+
+5.  ActionLatency
+
+6.  ActionsInPAC
+
+7.  WorkersMade
+
+8.  ComplexAbilitiesUsed
 
 ### Ignore
 
