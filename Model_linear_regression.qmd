@@ -52,6 +52,16 @@ df2_cor<-cor(training)
 corrplot(df2_cor,method="circle",order="hclust",tl.col="black")
 ```
 
+high positive correlation:
+
+1.  ActionLatency and GapBetweenPACs
+
+high negative correlations:
+
+1.  NumberOfPACs and ActionLatency
+
+2.  LeagueIndex and ActionLatency
+
 ### Initial Modeling
 
 ```{r}
@@ -60,6 +70,24 @@ model <- lm(APM ~ ., data = training)
 
 summary(model)
 ```
+
+Insignificant features (p-value greater than 0.05):
+
+1.  GameID
+
+2.  HoursPerWeek
+
+3.  TotalHours
+
+4.  AssignToHotkeys
+
+5.  UniqueHotkeys
+
+6.  GapBetweenPACs
+
+7.  TotalMapExplored
+
+8.  ComplexUnitsMade
 
 #### Predictive Capacity
 
@@ -96,6 +124,10 @@ cp_min<-which.min(cp)
 bic_min<-which.min(bic)
 r2_min<-which.max(r2)
 
+
+print("cp: ",cp_min)
+print("bic: ",bic_min)
+print("r_squared: ",r2_min)
 coef(regs,id=cp_min)
 ```
 
@@ -106,6 +138,24 @@ coef(regs,id=bic_min)
 ```{r}
 coef(regs,id=r2_min)
 ```
+
+significant features:
+
+1.  Age
+
+2.  SelectByHotkeys
+
+3.  MinimapRightClicks
+
+4.  NumberOfPACs
+
+5.  ActionLatency
+
+6.  ActionsInPAC
+
+7.  WorkersMade
+
+8.  ComplexAbilitiesUsed
 
 #### Forward stepwise selection
 
@@ -132,6 +182,26 @@ coef(regs,id=bic_min)
 coef(regs,id=r2_min)
 ```
 
+significant features:
+
+1.  Age
+
+2.  SelectByHotkeys
+
+3.  MinimapRightClicks
+
+4.  NumberOfPACs
+
+5.  ActionLatency
+
+6.  ActionsInPAC
+
+7.  WorkersMade
+
+8.  ComplexAbilitiesUsed
+
+same as best subset selection
+
 #### Backward stepwise selection
 
 ```{r}
@@ -157,13 +227,15 @@ coef(regs,id=bic_min)
 coef(regs,id=r2_min)
 ```
 
+Same as previous features
+
 ### Optimal Linear Regression Model
 
 ```{r}
 ###process the data 
 
-#df3<-df2%>%
- # select(-addr_state,-total_bal_il,-all_util,-inq_fi,-emp_length,-acc_now_delinq,-open_il_6m,-annual_inc,-num_il_tl)
+df3<-training%>%
+  select(-GapBetweenPACs,-LeagueIndex,-all_util,-inq_fi,-emp_length,-acc_now_delinq,-open_il_6m,-annual_inc,-num_il_tl)
 
 
 ```
@@ -179,3 +251,24 @@ rmse
 ```
 
 ## Conclusion
+
+### Ignore
+
+```{r}
+df1<-read.csv("./data/starcraft.csv")
+
+sum(is.na(df1))
+df1<-na.omit(df1)
+
+str(df1)
+
+
+set.seed(2333)  
+split <- sample.split(df1$APM, SplitRatio = 0.8)
+training1 <- subset(df1, split == TRUE)
+testing1 <- subset(df1, split == FALSE)
+
+model1 <- lm(APM ~ ., data = training1)
+
+summary(model1)
+```
