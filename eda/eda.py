@@ -37,10 +37,10 @@ combined_data = pd.concat(all_data, ignore_index=True)
 #output_path = os.path.join(output_directory, 'combined_data.csv')
 #combined_data.to_csv(output_path, index=False)
 
-import pandas as pd
-from bokeh.plotting import figure, show, output_file
-from bokeh.models import ColumnDataSource, Select, CustomJS
-from bokeh.layouts import column
+#import pandas as pd
+#from bokeh.plotting import figure, show, output_file
+#from bokeh.models import ColumnDataSource, Select, CustomJS
+#from bokeh.layouts import column
 
 # Calculate the percentage of players for each race
 percentage_data = combined_data.groupby(['Season', 'Region', 'Rank', 'Race']).size().reset_index(name='Count')
