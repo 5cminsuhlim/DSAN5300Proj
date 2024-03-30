@@ -1,0 +1,181 @@
+---
+title: "Model: Linear Regression"
+format: 
+  html:
+      embed-resources: true
+      code-line-numbers: true
+editor: visual
+---
+
+## Linear Regression Model
+
+goal:
+
+1.  Are we able to predict a player’s APM?
+
+2.  What are the most important features in predicting a player’s APM?
+
+### Data Preprocessing
+
+```{r,warning=FALSE,message=FALSE}
+library(dplyr)
+library(caTools)
+library(tidyverse)
+library(modeldata)
+library(leaps)
+library(caret)
+library(corrplot)
+
+df<-read.csv("./data/SkillCraft1_Dataset.csv")
+
+str(df)
+
+df$Age<-as.numeric(df$Age)
+df$HoursPerWeek<-as.numeric(df$HoursPerWeek)
+df$TotalHours<-as.numeric(df$TotalHours)
+
+#sum(is.na(df$Age))
+#there are about 185 missing value in total, about 55 players, so omit
+#3395 originally, 3338 after omit, deleted 57 observations--reasonable due to small amount
+df<-na.omit(df)
+
+set.seed(2333)  
+split <- sample.split(df$APM, SplitRatio = 0.8)
+training <- subset(df, split == TRUE)
+testing <- subset(df, split == FALSE)
+```
+
+```{r}
+df2_cor<-cor(training)
+
+#png(filename="correlation_plot_large.png", width=1200, height=1200, res=120)
+corrplot(df2_cor,method="circle",order="hclust",tl.col="black")
+```
+
+### Initial Modeling
+
+```{r}
+#initial modeling 
+model <- lm(APM ~ ., data = training)
+
+summary(model)
+```
+
+#### Predictive Capacity
+
+```{r}
+predictions <- predict(model, newdata = testing)
+
+# Actual values
+actuals <- testing$APM
+
+# Compute errors
+errors <- predictions - actuals
+MAE <- mean(abs(errors))
+MSE <- mean(errors^2)
+RMSE <- sqrt(MSE)
+
+# Print the metrics
+cat("MAE:", MAE, "\nMSE:", MSE, "\nRMSE:", RMSE)
+
+```
+
+### Model Improvement
+
+#### Best Subset Selection
+
+```{r}
+regs<-regsubsets(APM~.,data=training)
+
+regsummary<-summary(regs)
+cp<-regsummary$cp
+bic<-regsummary$bic
+r2<-regsummary$adjr2
+
+cp_min<-which.min(cp)
+bic_min<-which.min(bic)
+r2_min<-which.max(r2)
+
+coef(regs,id=cp_min)
+```
+
+```{r}
+coef(regs,id=bic_min)
+```
+
+```{r}
+coef(regs,id=r2_min)
+```
+
+#### Forward stepwise selection
+
+```{r}
+regs<-regsubsets(APM~.,data=training,method="forward")
+
+regsummary<-summary(regs)
+cp<-regsummary$cp
+bic<-regsummary$bic
+r2<-regsummary$adjr2
+
+cp_min<-which.min(cp)
+bic_min<-which.min(bic)
+r2_min<-which.max(r2)
+
+coef(regs,id=cp_min)
+```
+
+```{r}
+coef(regs,id=bic_min)
+```
+
+```{r}
+coef(regs,id=r2_min)
+```
+
+#### Backward stepwise selection
+
+```{r}
+regs<-regsubsets(APM~.,data=training,method="backward")
+
+regsummary<-summary(regs)
+cp<-regsummary$cp
+bic<-regsummary$bic
+r2<-regsummary$adjr2
+
+cp_min<-which.min(cp)
+bic_min<-which.min(bic)
+r2_min<-which.max(r2)
+
+coef(regs,id=cp_min)
+```
+
+```{r}
+coef(regs,id=bic_min)
+```
+
+```{r}
+coef(regs,id=r2_min)
+```
+
+### Optimal Linear Regression Model
+
+```{r}
+###process the data 
+
+#df3<-df2%>%
+ # select(-addr_state,-total_bal_il,-all_util,-inq_fi,-emp_length,-acc_now_delinq,-open_il_6m,-annual_inc,-num_il_tl)
+
+
+```
+
+```{r}
+best_fit<-lm(APM~.,data=training)
+pred<-predict(best_fit,newdata=testing)
+
+real<-testing$APM
+rmse<-sqrt(mean((pred-real)^2))
+
+rmse
+```
+
+## Conclusion
