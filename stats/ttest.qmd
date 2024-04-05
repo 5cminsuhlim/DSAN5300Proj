@@ -12,7 +12,6 @@ format:
 library(tidyverse)
 library(rstatix)
 library(ggpubr)
-
 ```
 
 ```{r data}
@@ -30,10 +29,30 @@ For this dataset, SPM is not included as a variable that we can examine. Instead
 First take a look at the dataset and calculate the average APM across each rank.
 
 ```{r eda1}
-#groupby rank, summarize avg APM, then plot
-eda_apm <- main %>% group_by(LeagueIndex) %>% summarize(avgAPM = mean(APM))
+#rank labels
+ranks <- c('bronze', 'silver', 'gold', 'platinum', 'diamond', 'master', 'grandmaster', 'professional')
 
-barplot(eda_apm$avgAPM, names.arg = eda_apm$LeagueIndex, main='Avg APM By Rank/LeagueIndex 1-8', xlab='Rank 1-8 (1=Bronze to 8=Professional)', ylab='Avg APM')
+#rank colors:
+rank_colors <- c('#CD7F32', '#C0C0C0', '#FFF59E', '#028A0F', '#B9F2FF', '#04D9FF', '#4f6100', '#E75480')
+
+#groupby rank, summarize avg APM, then plot
+eda_apm <- main %>% group_by(LeagueIndex) %>% summarize(avgAPM = mean(APM)) %>% mutate(rank = ranks[LeagueIndex])
+
+#make rank col factor
+eda_apm$rank <-factor(eda_apm$rank, levels = ranks)
+
+ggplot(eda_apm, aes(x = rank, y = avgAPM, fill = rank)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Average APM by Rank", x = "Rank", y = "Average APM") +
+  scale_fill_manual(values = rank_colors) +
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.ticks = element_line(color = "black"),
+    axis.line = element_line(color = "black"),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
 
 ```
 
