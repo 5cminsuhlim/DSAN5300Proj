@@ -1,0 +1,75 @@
+---
+title: "Clustering-Linear"
+format: 
+  html:
+      embed-resources: true
+      code-line-numbers: true
+editor: visual
+---
+
+1.  From **linear regression**, which feature clusters most accurately represent a player's ranks?
+
+    1.  Elbow method
+
+```{r,warning=FALSE,message=FALSE}
+library(dplyr)
+library(caTools)
+library(tidyverse)
+library(modeldata)
+library(leaps)
+library(caret)
+library(corrplot)
+
+df<-read.csv("../data/SkillCraft1_Dataset.csv")
+
+df$Age<-as.numeric(df$Age)
+df$HoursPerWeek<-as.numeric(df$HoursPerWeek)
+df$TotalHours<-as.numeric(df$TotalHours)
+
+#sum(is.na(df$Age))
+#there are about 185 missing value in total, about 55 players, so omit
+#3395 originally, 3338 after omit, deleted 57 observations--reasonable due to small amount
+df<-na.omit(df)
+
+str(df)
+```
+
+```{r,warning=FALSE,message=FALSE}
+library(tidyverse)
+library(cluster)
+library(factoextra)
+
+df <- df %>% select(-GameID) 
+#standardize the data
+df_scaled <- scale(df)
+
+#PCA to reduce dimensionality
+pca_result <- prcomp(df_scaled, center = TRUE, scale. = TRUE)
+summary(pca_result)
+
+#determine the optimal number of clusters using the Elbow method
+fviz_nbclust(df_scaled, kmeans, method = "wss") + geom_vline(xintercept = 4, linetype = 2)
+
+```
+
+```{r,warning=FALSE,message=FALSE}
+library(cluster)  #silhouette score
+library(factoextra)  #fviz_nbclust and fviz_silhouette
+library(stats)  #kmeans
+
+pca_components <- pca_result$x
+
+#total within-cluster sum of squares (WSS) for a range of number of clusters
+wss <- sapply(1:10, function(k){
+  kmeans(pca_components, centers = k, nstart = 25)$tot.withinss
+})
+
+#the square root of WSS
+rmse <- sqrt(wss)
+
+#elbow plot using RMSE
+plot(1:10, rmse, type = "b", pch = 19, frame = FALSE, 
+     xlab="Number of clusters k", ylab="RMSE")
+abline(v = which.min(diff(diff(rmse))), col = "red", lwd = 2, lty = 2)
+
+```
