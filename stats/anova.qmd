@@ -152,7 +152,10 @@ perc_combos <- data.frame(Class_Combo = apply(race_combi, 1, paste, collapse = "
                         Win_Percentage = combo_percs)
 print(perc_combos)
 
-barplot(names.arg = perc_combos$Class_Combo, perc_combos$Win_Percentage, main = 'Win Rate of Each Race vs Race Combination', col='lightblue', ylab = 'Win Rate (%)', xlab='Each Race vs Race Combination', ylim = c(0,100))
+#remove duplicate combinations (remove rows: 4, 7, 9):
+perc_combos_filtered <- perc_combos[-c(4,7,9), ]
+
+barplot(names.arg = perc_combos_filtered$Class_Combo, perc_combos_filtered$Win_Percentage, main = 'Win Rate of Each Race vs Race Combination (1st Perspective)', col='lightblue', ylab = 'Win Rate (%)', xlab='Each Race vs Race Combination', ylim = c(0,100))
 
 ```
 
@@ -176,7 +179,9 @@ First have a look at the dataset in regards to APM/SPM for each race.
 ggplot(iem_players) +
   aes(x = Race, y = APM, fill = Race) +
   geom_boxplot() +
-  theme(legend.position = "none") + labs(title='APM per Race Class')
+  theme(legend.position = "none") + labs(title='APM per Race Class (Protoss, Terran, Zerg)', 
+                                         labels = c('Protoss', 'Terran', 'Zerg')) + 
+  scale_fill_manual(values = c('#F8DC52', '#315BE6', '#25033D'))
 ```
 ### IEM EDA 2
 
@@ -184,7 +189,7 @@ ggplot(iem_players) +
 ggplot(iem_players) +
   aes(x = Race, y = SPM, fill = Race) +
   geom_boxplot() +
-  theme(legend.position = "none") + labs(title='SPM per Race Class')
+  theme(legend.position = "none") + labs(title='SPM per Race Class (Protoss, Terran, Zerg)') + scale_fill_manual(values = c('#F8DC52', '#315BE6', '#25033D'))
 ```
 
 In both EDA plots of the iem_players dataset, we can see that players that play the Zerg race class typically make more actions and screen changes. Therefore, the play style needed to play Zerg requires a much higher APM and SPM to play effectively at a professional level. This might mean that there is a higher skill ceiling for this race class to compete against other race classes at a professional level.
@@ -219,8 +224,8 @@ Plotting tools to check for normality of the ANOVA testings.
 
 ```{r anova1_norm_plot}
 
-hist(apm_anova$residuals, main='APM ANOVA Testing; APM ~ Race')
-hist(spm_anova$residuals, main='SPM ANOVA Testing; SPM ~ Race')
+hist(apm_anova$residuals, main='APM ANOVA Testing; APM ~ Race', col = 'lightblue')
+hist(spm_anova$residuals, main='SPM ANOVA Testing; SPM ~ Race', col = 'lightblue')
 
 ```
 
