@@ -1,0 +1,284 @@
+---
+title: "Model: Linear Regression"
+format: 
+  html:
+      embed-resources: true
+      code-line-numbers: true
+editor: visual
+---
+
+## Linear Regression Model
+
+In this section, our focus narrows to the intricacies of the linear regression model, with the dual objectives of discerning whether a player’s Actions Per Minute (APM) can be accurately predicted and identifying the pivotal features that most significantly influence the prediction of a player’s APM.
+
+### Data Preprocessing
+
+```{r,warning=FALSE,message=FALSE}
+library(dplyr)
+library(caTools)
+library(tidyverse)
+library(modeldata)
+library(leaps)
+library(caret)
+library(corrplot)
+
+df<-read.csv("../data/SkillCraft1_Dataset.csv")
+
+str(df)
+
+df$Age<-as.numeric(df$Age)
+df$HoursPerWeek<-as.numeric(df$HoursPerWeek)
+df$TotalHours<-as.numeric(df$TotalHours)
+
+#sum(is.na(df$Age))
+#there are about 185 missing value in total, about 55 players, so omit
+#3395 originally, 3338 after omit, deleted 57 observations--reasonable due to small amount
+df<-na.omit(df)
+
+set.seed(2333)  
+split <- sample.split(df$APM, SplitRatio = 0.8)
+training <- subset(df, split == TRUE)
+testing <- subset(df, split == FALSE)
+```
+
+```{r}
+df2_cor<-cor(training)
+
+#png(filename="correlation_plot_large.png", width=1200, height=1200, res=120)
+corrplot(df2_cor,method="circle",order="hclust",tl.col="black")
+```
+
+The correlation plot revealed striking relationships: ‘ActionLatency’ and ‘GapBetweenPACs’ exhibited a notable positive correlation, while ‘NumberOfPACs’ and ‘LeagueIndex’ inversely correlated with ‘ActionLatency.’ These early insights suggested key areas of focus for our predictive modeling.
+
+### Initial Modeling
+
+```{r}
+#initial modeling 
+model <- lm(APM ~ ., data = training)
+
+summary(model)
+```
+
+Insignificant features (p-value greater than 0.05):
+
+1.  GameID
+
+2.  HoursPerWeek
+
+3.  TotalHours
+
+4.  AssignToHotkeys
+
+5.  UniqueHotkeys
+
+6.  GapBetweenPACs
+
+7.  TotalMapExplored
+
+8.  ComplexUnitsMade
+
+For the initial model, we included all available predictors. However, upon scrutinizing the model’s summary, we identified several predictors like ‘GameID’, ‘HoursPerWeek’, and ‘TotalHours’ that lacked statistical significance, hence presenting an opportunity to refine our model.
+
+#### Predictive Capacity
+
+```{r}
+predictions <- predict(model, newdata = testing)
+
+# Actual values
+actuals <- testing$APM
+
+# Compute errors
+errors <- predictions - actuals
+MAE <- mean(abs(errors))
+MSE <- mean(errors^2)
+RMSE <- sqrt(MSE)
+
+# Print the metrics
+cat("MAE:", MAE, "\nMSE:", MSE, "\nRMSE:", RMSE)
+
+```
+
+### Model Improvement
+
+#### Best Subset Selection
+
+```{r}
+regs<-regsubsets(APM~.,data=training)
+
+regsummary<-summary(regs)
+cp<-regsummary$cp
+bic<-regsummary$bic
+r2<-regsummary$adjr2
+
+cp_min<-which.min(cp)
+bic_min<-which.min(bic)
+r2_min<-which.max(r2)
+
+
+print("cp: ",cp_min)
+print("bic: ",bic_min)
+print("r_squared: ",r2_min)
+coef(regs,id=cp_min)
+```
+
+```{r}
+coef(regs,id=bic_min)
+```
+
+```{r}
+coef(regs,id=r2_min)
+```
+
+significant features:
+
+1.  Age
+
+2.  SelectByHotkeys
+
+3.  MinimapRightClicks
+
+4.  NumberOfPACs
+
+5.  ActionLatency
+
+6.  ActionsInPAC
+
+7.  WorkersMade
+
+8.  ComplexAbilitiesUsed
+
+#### Forward stepwise selection
+
+```{r}
+regs<-regsubsets(APM~.,data=training,method="forward")
+
+regsummary<-summary(regs)
+cp<-regsummary$cp
+bic<-regsummary$bic
+r2<-regsummary$adjr2
+
+cp_min<-which.min(cp)
+bic_min<-which.min(bic)
+r2_min<-which.max(r2)
+
+coef(regs,id=cp_min)
+```
+
+```{r}
+coef(regs,id=bic_min)
+```
+
+```{r}
+coef(regs,id=r2_min)
+```
+
+significant features:
+
+1.  Age
+
+2.  SelectByHotkeys
+
+3.  MinimapRightClicks
+
+4.  NumberOfPACs
+
+5.  ActionLatency
+
+6.  ActionsInPAC
+
+7.  WorkersMade
+
+8.  ComplexAbilitiesUsed
+
+same as best subset selection
+
+#### Backward stepwise selection
+
+```{r}
+regs<-regsubsets(APM~.,data=training,method="backward")
+
+regsummary<-summary(regs)
+cp<-regsummary$cp
+bic<-regsummary$bic
+r2<-regsummary$adjr2
+
+cp_min<-which.min(cp)
+bic_min<-which.min(bic)
+r2_min<-which.max(r2)
+
+coef(regs,id=cp_min)
+```
+
+```{r}
+coef(regs,id=bic_min)
+```
+
+```{r}
+coef(regs,id=r2_min)
+```
+
+Delving deeper, we employed best subset, forward stepwise, and backward stepwise selection methods. These techniques helped us to distill the essence of our predictors, consistently highlighting features such as ‘Age’, ‘SelectByHotkeys’, and ‘MinimapRightClicks’ as significant influencers of APM.
+
+### Optimal Linear Regression Model
+
+```{r}
+###process the data 
+
+df3<-training%>%
+  select(-GapBetweenPACs,-LeagueIndex,-all_util,-inq_fi,-emp_length,-acc_now_delinq,-open_il_6m,-annual_inc,-num_il_tl)
+
+
+```
+
+```{r}
+best_fit<-lm(APM~.,data=training)
+pred<-predict(best_fit,newdata=testing)
+
+real<-testing$APM
+rmse<-sqrt(mean((pred-real)^2))
+
+rmse
+```
+
+## Conclusion
+
+Considering the scale of APM, the predictive metric RMSE at around 9.37 means that linear regression model may not be the optimal choice for predicting player’s APM.
+
+The most important features in predicting a player’s APM include:
+
+1.  Age
+
+2.  SelectByHotkeys
+
+3.  MinimapRightClicks
+
+4.  NumberOfPACs
+
+5.  ActionLatency
+
+6.  ActionsInPAC
+
+7.  WorkersMade
+
+8.  ComplexAbilitiesUsed
+
+### Ignore
+
+```{r}
+df1<-read.csv("./data/starcraft.csv")
+
+sum(is.na(df1))
+df1<-na.omit(df1)
+
+str(df1)
+
+
+set.seed(2333)  
+split <- sample.split(df1$APM, SplitRatio = 0.8)
+training1 <- subset(df1, split == TRUE)
+testing1 <- subset(df1, split == FALSE)
+
+model1 <- lm(APM ~ ., data = training1)
+
+summary(model1)
+```
