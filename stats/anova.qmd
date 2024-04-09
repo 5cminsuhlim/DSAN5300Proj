@@ -34,17 +34,13 @@ library(ggplot2)
 
 ```{r data}
 #ANOVA Motivation dataset:
-match_hist = read.csv('./data/sc2-matches-history.csv')
-
-#Main dataset of players across all ranks.
-#LeagueIndex: Bronze, Silver, Gold, Platinum, Diamond, Master, GrandMaster, and Professional leagues coded 1-8 (Ordinal)
-main = read.csv('./data/SkillCraft1_Dataset.csv')
+match_hist = read.csv('../data/sc2-matches-history.csv')
 
 #IEM ANOVA dataset
-iem_games = read.csv('./data/iem/IEM_games.csv')
-iem_players = read.csv('./data/iem/IEM_players.csv')
-iem_players_info = read.csv('./data/iem/IEM_players_info.csv')
-iem_scores = read.csv('./data/iem/IEM_scores.csv')
+iem_games = read.csv('../data/iem/IEM_games.csv')
+iem_players = read.csv('../data/iem/IEM_players.csv')
+iem_players_info = read.csv('../data/iem/IEM_players_info.csv')
+iem_scores = read.csv('../data/iem/IEM_scores.csv')
 
 ```
 
@@ -56,7 +52,7 @@ iem_scores = read.csv('./data/iem/IEM_scores.csv')
 
 #distribution of race classes played in percentage
 race1 <- table(match_hist$player_1_race)
-barplot(race1, main='Race Class Distribution of Recorded Pro Players (SC2)')
+barplot(race1, main='Race Class Distribution of Recorded Pro Players (SC2)', col='lightblue')
 
 race2 <- table(match_hist$player_2_race)
 barplot(race2, main='Race Class Distribution of Opponents of Recorded Pro Players (SC2)', col='lightblue')
