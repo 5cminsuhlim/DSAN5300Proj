@@ -50,12 +50,35 @@ iem_scores = read.csv('../data/iem/IEM_scores.csv')
 
 ```{r eda1}
 
-#distribution of race classes played in percentage
-race1 <- table(match_hist$player_1_race)
-barplot(race1, main='Race Class Distribution of Recorded Pro Players (SC2)', col='lightblue')
+#distribution of race classes played in percentage as dataframe
+race1_df <- as.data.frame(table(match_hist$player_1_race))
+race2_df <- as.data.frame(table(match_hist$player_2_race))
+#rename cols
+names(race1_df) <- c("Race", "Count")
+names(race2_df) <- c("Race", "Count")
 
-race2 <- table(match_hist$player_2_race)
-barplot(race2, main='Race Class Distribution of Opponents of Recorded Pro Players (SC2)', col='lightblue')
+#barplot(race1, main='Race Class Distribution of Recorded Pro Players (SC2)', col='lightblue')
+#barplot(race2, main='Race Class Distribution of Opponents of Recorded Pro Players (SC2)', col='lightblue')
+
+ggplot(race1_df, aes(x=Race, y=Count))+
+  geom_bar(stat = "identity", fill='lightblue', color = 'black')+
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.ticks = element_line(color = "black"),
+    axis.line = element_line(color = "black")
+  )+ labs(title = 'Distribution of Race Classes for Player 1')
+
+ggplot(race2_df, aes(x=Race, y=Count))+
+  geom_bar(stat = 'identity', fill='lightblue', color = 'black')+
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.ticks = element_line(color = "black"),
+    axis.line = element_line(color = "black")
+  )+ labs(title = 'Distribution of Race Classes for Player 2')
 
 ```
 
@@ -109,8 +132,21 @@ race_wr <- sapply(match_hist_races, function(race){
 
 print(race_wr)
 
-barplot(race_wr, main='Win Percentage for Each Race Class', xlab='Races', ylab='Win Percentage (%)', col = 'lightblue', ylim = c(0,100))
+race_wr_df <- data.frame(Race = match_hist_races, Win_Percentage = race_wr)
 
+#barplot(race_wr, main='Win Percentage for Each Race Class', xlab='Races', ylab='Win Percentage (%)', col = 'lightblue', ylim = c(0,100))
+
+ggplot(race_wr_df, aes(x = Race, y = Win_Percentage)) +
+  geom_bar(stat = 'identity', fill = 'lightblue', color = 'black') +
+  coord_cartesian(ylim = c(0, 100)) +
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.ticks = element_line(color = "black"),
+    axis.line = element_line(color = "black")
+  )+ labs(title = 'Win percentage for Each Race Class') +
+  labs(y = 'Win Percentage (%)')
 ```
 
 With a similar distribution, it seems each race class has similar win rates of ~53-56%. It does not seem like chosen race has any impact on the final win rate. Though each race having above 50% win rate by 3% or more is actually significant.
@@ -151,7 +187,20 @@ print(perc_combos)
 #remove duplicate combinations (remove rows: 4, 7, 9):
 perc_combos_filtered <- perc_combos[-c(4,7,9), ]
 
-barplot(names.arg = perc_combos_filtered$Class_Combo, perc_combos_filtered$Win_Percentage, main = 'Win Rate of Each Race vs Race Combination (1st Perspective)', col='lightblue', ylab = 'Win Rate (%)', xlab='Each Race vs Race Combination', ylim = c(0,100))
+#barplot(names.arg = perc_combos_filtered$Class_Combo, perc_combos_filtered$Win_Percentage, main = 'Win Rate of Each Race vs Race Combination (1st Perspective)', col='lightblue', ylab = 'Win Rate (%)', xlab='Each Race vs Race Combination', ylim = c(0,100))
+
+ggplot(perc_combos_filtered, aes(x = Class_Combo, y = Win_Percentage)) + geom_bar(stat='identity', fill = 'lightblue', color = 'black')+
+  coord_cartesian(ylim = c(0, 100)) +
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.ticks = element_line(color = "black"),
+    axis.line = element_line(color = "black")
+  )+ labs(title = 'Win percentage for Each Race Class') +
+  labs(x = 'Each Race vs Race Combination',
+       y = 'Win Percentage (%)',
+       title = 'Win Rate of Each Race vs Race Combination (1st Perspective)')
 
 ```
 
@@ -177,7 +226,14 @@ ggplot(iem_players) +
   geom_boxplot() +
   theme(legend.position = "none") + labs(title='APM per Race Class (Protoss, Terran, Zerg)', 
                                          labels = c('Protoss', 'Terran', 'Zerg')) + 
-  scale_fill_manual(values = c('#F8DC52', '#315BE6', '#25033D'))
+  scale_fill_manual(values = c('#F8DC52', '#315BE6', '#25033D'))+
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.ticks = element_line(color = "black"),
+    axis.line = element_line(color = "black")
+  )
 ```
 ### IEM EDA 2
 
@@ -185,7 +241,15 @@ ggplot(iem_players) +
 ggplot(iem_players) +
   aes(x = Race, y = SPM, fill = Race) +
   geom_boxplot() +
-  theme(legend.position = "none") + labs(title='SPM per Race Class (Protoss, Terran, Zerg)') + scale_fill_manual(values = c('#F8DC52', '#315BE6', '#25033D'))
+  theme(legend.position = "none") + labs(title='SPM per Race Class (Protoss, Terran, Zerg)') + 
+  scale_fill_manual(values = c('#F8DC52', '#315BE6', '#25033D'))+
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.ticks = element_line(color = "black"),
+    axis.line = element_line(color = "black")
+  )
 ```
 
 In both EDA plots of the iem_players dataset, we can see that players that play the Zerg race class typically make more actions and screen changes. Therefore, the play style needed to play Zerg requires a much higher APM and SPM to play effectively at a professional level. This might mean that there is a higher skill ceiling for this race class to compete against other race classes at a professional level.
@@ -220,8 +284,29 @@ Plotting tools to check for normality of the ANOVA testings.
 
 ```{r anova1_norm_plot}
 
-hist(apm_anova$residuals, main='APM ANOVA Testing; APM ~ Race', col = 'lightblue')
-hist(spm_anova$residuals, main='SPM ANOVA Testing; SPM ~ Race', col = 'lightblue')
+#hist(apm_anova$residuals, main='APM ANOVA Testing; APM ~ Race', col = 'lightblue')
+#hist(spm_anova$residuals, main='SPM ANOVA Testing; SPM ~ Race', col = 'lightblue')
+
+ggplot(data.frame(Residuals = apm_anova$residuals), aes(x = Residuals)) +
+  geom_histogram(fill = "lightblue", color = "black", bins = 20)+
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.ticks = element_line(color = "black"),
+    axis.line = element_line(color = "black")
+  ) +
+  labs(title = 'APM ANOVA Testing; APM ~ Race')
+ggplot(data.frame(Residuals = spm_anova$residuals), aes(x = Residuals)) +
+  geom_histogram(fill = "lightblue", color = "black", bins = 20)+
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.ticks = element_line(color = "black"),
+    axis.line = element_line(color = "black")
+  ) +
+  labs(title = 'SPM ANOVA Testing; SPM ~ Race')
 
 ```
 
