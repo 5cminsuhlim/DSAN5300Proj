@@ -17,7 +17,7 @@ library(ggpubr)
 ```{r data}
 #Main dataset of players across all ranks.
 #LeagueIndex: Bronze, Silver, Gold, Platinum, Diamond, Master, GrandMaster, and Professional leagues coded 1-8 (Ordinal)
-main = read.csv('./data/SkillCraft1_Dataset.csv')
+main = read.csv('../data/SkillCraft1_Dataset_ttest.csv')
 ```
 
 # From ANOVA Motivations
