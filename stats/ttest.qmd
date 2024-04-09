@@ -42,7 +42,7 @@ eda_apm <- main %>% group_by(LeagueIndex) %>% summarize(avgAPM = mean(APM)) %>% 
 eda_apm$rank <-factor(eda_apm$rank, levels = ranks)
 
 ggplot(eda_apm, aes(x = rank, y = avgAPM, fill = rank)) +
-  geom_bar(stat = "identity") +
+  geom_bar(stat = "identity", color = 'black') +
   labs(title = "Average APM by Rank", x = "Rank", y = "Average APM") +
   scale_fill_manual(values = rank_colors) +
   theme_minimal() +
@@ -79,7 +79,8 @@ apm_plot <- pw_apm %>%
   add_xy_position(x='LeagueIndex', step.increase = 1)
 
 ggboxplot(main, x='LeagueIndex', y='APM') + 
-  stat_pvalue_manual(apm_plot, hide.ns = TRUE)
+  stat_pvalue_manual(apm_plot, hide.ns = TRUE) +
+  labs(title = 'Significance of APM Difference for Each Rank Combination')
 
 
 ```
