@@ -38,6 +38,8 @@ str(df)
 library(tidyverse)
 library(cluster)
 library(factoextra)
+library(factoextra) 
+library(stats)
 
 df <- df %>% select(-GameID) 
 #standardize the data
@@ -52,10 +54,19 @@ fviz_nbclust(df_scaled, kmeans, method = "wss") + geom_vline(xintercept = 4, lin
 
 ```
 
+The plot represents that there are 4 most significant features based on the Elbow method.
+
+This result corresponds to the linear regression result, in which reveals that the 4 most significant features are as following:
+
+1.  SelectByHotkeys
+
+2.  NumberOfPACs
+
+3.  ActionLatency
+
+4.  ActionInPAC
+
 ```{r,warning=FALSE,message=FALSE}
-library(cluster)  #silhouette score
-library(factoextra)  #fviz_nbclust and fviz_silhouette
-library(stats)  #kmeans
 
 pca_components <- pca_result$x
 
@@ -73,3 +84,5 @@ plot(1:10, rmse, type = "b", pch = 19, frame = FALSE,
 abline(v = which.min(diff(diff(rmse))), col = "red", lwd = 2, lty = 2)
 
 ```
+
+The RMSE here is the square root of the within cluster sum of squares, which does not have explicit meaning but could be used as a reference of viewing the number of clusters from a different perspective.
