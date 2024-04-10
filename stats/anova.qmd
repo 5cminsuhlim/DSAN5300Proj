@@ -312,7 +312,7 @@ ggplot(data.frame(Residuals = spm_anova$residuals), aes(x = Residuals)) +
 
 With our sample size from the IEM dataset, normality shouldn't be an issue but checking it wouldn't hurt. Since both histograms for SPM and APM seem normally distributed, we can continue on and check how different APMs and SPMs are with each race variable.
 
-```{r anova1}
+```{r anova2}
 #using report to make assessment on ANOVA tests
 library("report")
 
