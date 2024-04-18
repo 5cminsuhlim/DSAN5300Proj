@@ -15,7 +15,7 @@
 5. [SC2 Pulse](https://sc2pulse.nephest.com/sc2/?#stats): Used for EDA; gathered via web scraping
 
 ## Visual Report
-[Posterboard]() TODO
+[Posterboard](assets/poster.pdf)
 
 ## Official Written Report (Research Gate)
-[Final Paper]() TODO
+[Final Paper](assets/paper.pdf)
