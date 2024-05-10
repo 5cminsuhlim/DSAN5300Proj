@@ -18,4 +18,4 @@
 [Posterboard](assets/poster.pdf)
 
 ## Official Written Report (Research Gate)
-[Final Paper](assets/paper.pdf)
+[Final Paper](https://www.researchgate.net/publication/380467385_Starcraft_2_Performance_An_In-Depth_Look_At_In-Game_Telemetry_And_Player_Rank)
